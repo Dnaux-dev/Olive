@@ -4,11 +4,22 @@ Drug Database API Endpoints
 
 from fastapi import APIRouter, HTTPException
 from typing import List
-from ..models import DrugResponse, DrugSearchResponse, GenericResponse, SuccessResponse
+from ..models import (
+    DrugResponse, DrugSearchResponse, GenericResponse, SuccessResponse,
+    DrugVerificationRequest, DrugVerificationResponse
+)
 from ..services.drug_service import get_drug_service
 from ..services.database_service import get_db_service
+from ..services.verification_service import get_verification_service
 
 router = APIRouter(prefix="/api/drugs", tags=["drugs"])
+
+@router.post("/verify", response_model=DrugVerificationResponse)
+def verify_drug(request: DrugVerificationRequest):
+    """Verify a drug by its NAFDAC registration number"""
+    verification_service = get_verification_service()
+    result = verification_service.verify_drug(request.reg_number)
+    return DrugVerificationResponse(**result)
 
 @router.get("/search", response_model=DrugSearchResponse)
 def search_drugs(query: str):

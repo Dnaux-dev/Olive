@@ -164,6 +164,36 @@ def init_database(db_path: str = "./data/medi_sync.db"):
         )
     """)
     
+    # 9. Registered drugs table (Safe List)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS registered_drugs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reg_number TEXT NOT NULL UNIQUE,
+            product_name TEXT NOT NULL,
+            manufacturer TEXT,
+            category TEXT,
+            is_verified BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Seed common drugs
+    print("Seeding registered drugs...")
+    common_drugs = [
+        ("A4-0102", "Panadol Advance", "GlaxoSmithKline", "Analgesic"),
+        ("04-2345", "Amoxil Capsules", "GSK Nigeria", "Antibiotic"),
+        ("04-5678", "Emzor Paracetamol", "Emzor Pharmaceuticals", "Analgesic"),
+        ("A4-9876", "Lonart DS", "Greenlife Pharmaceuticals", "Antimalarial"),
+        ("04-1122", "Coartem 80/480", "Novartis", "Antimalarial"),
+        ("B4-5566", "Ventolin Inhaler", "Glaxo Wellcome", "Respiratory"),
+        ("04-7788", "Augmentin 625mg", "Beecham", "Antibiotic")
+    ]
+    
+    cursor.executemany("""
+        INSERT OR IGNORE INTO registered_drugs (reg_number, product_name, manufacturer, category)
+        VALUES (?, ?, ?, ?)
+    """, common_drugs)
+    
     # Create indexes for better query performance
     print("Creating indexes...")
     
@@ -179,6 +209,7 @@ def init_database(db_path: str = "./data/medi_sync.db"):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_drug_database_emdex ON drug_database(emdex_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_drug_database_name ON drug_database(name)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_pills_drug_name ON pills(drug_name)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_registered_drugs_reg ON registered_drugs(reg_number)")
     
     conn.commit()
     conn.close()

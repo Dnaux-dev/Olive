@@ -48,6 +48,16 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+# ==================== Verification Models ====================
+class DrugVerificationRequest(BaseModel):
+    reg_number: str
+
+class DrugVerificationResponse(BaseModel):
+    status: str  # verified, suspicious, invalid_format
+    message: str
+    product_details: Optional[Dict[str, Any]] = None
+    verification_tips: List[str]
+
 # ==================== Prescription Models ====================
 class DrugInput(BaseModel):
     drug_name: str
