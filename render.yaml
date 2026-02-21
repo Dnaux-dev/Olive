@@ -5,10 +5,10 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    plan: starter # Paid plan required for disk
+    plan: free
     envVars:
       - key: DATABASE_PATH
-        value: /data/medi_sync.db
+        value: ./data/medi_sync.db # Stored in instance memory (wiped on restart)
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
@@ -17,10 +17,6 @@ services:
         value: /etc/secrets/firebase-credentials.json
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: /etc/secrets/lifecare.json
-    disk:
-      name: olive-data
-      mountPath: /data
-      sizeGB: 1
 
   # Frontend Next.js service
   - type: web
@@ -28,6 +24,7 @@ services:
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm start
+    plan: free
     envVars:
       - key: NEXT_PUBLIC_API_URL
         fromService:
