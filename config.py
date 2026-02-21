@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")) # Default 24 hours
     
+    # AI APIs
+    google_ai_api_key: Optional[str] = os.getenv("GOOGLE_AI_API_KEY")
+    yarngpt_api_key: Optional[str] = os.getenv("YARNGPT_API_KEY")
+    
     # CORS
     allowed_origins: str = os.getenv("ALLOWED_ORIGINS", "*")
     
