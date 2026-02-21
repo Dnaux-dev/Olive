@@ -29,6 +29,12 @@ services:
         sync: false
       - key: SMTP_FROM_EMAIL
         sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+      - key: YARNGPT_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false # Requires a long random string
 
   # Frontend Next.js service
   - type: web
