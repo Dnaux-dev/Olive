@@ -204,3 +204,27 @@ class RemindersResult(BaseModel):
     sent: int
     failed: int
     errors: List[Dict[str, Any]] = []
+# ==================== Doctor Models ====================
+class DoctorCategory(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+
+class Doctor(BaseModel):
+    id: str
+    name: str
+    specialty: str
+    category_id: str
+    experience_years: int
+    rating: float
+    review_count: int
+    availability: str
+    bio: str
+    profile_image_url: Optional[str] = None
+    is_verified: bool = True
+    location: Optional[str] = None
+    consultation_fee: Optional[float] = None
+
+class DoctorResponse(BaseModel):
+    doctors: List[Doctor]
+    total_count: int

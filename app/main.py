@@ -43,7 +43,7 @@ app.add_middleware(
 )
 
 # Import routes
-from .routes import users, prescriptions, medications, reminders, drugs, whatsapp, voice
+from .routes import users, prescriptions, medications, reminders, drugs, whatsapp, voice, doctors
 
 # Include routers
 app.include_router(users.router)
@@ -53,6 +53,7 @@ app.include_router(reminders.router)
 app.include_router(drugs.router)
 app.include_router(whatsapp.router)
 app.include_router(voice.router)
+app.include_router(doctors.router)
 
 # Health check endpoint
 @app.get("/health")
