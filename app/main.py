@@ -110,6 +110,7 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
+    # The init_database call above handles the schema
     
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(

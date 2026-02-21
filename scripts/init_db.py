@@ -30,6 +30,7 @@ def init_database(db_path: str = "./data/medi_sync.db"):
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             phone_number TEXT UNIQUE NOT NULL,
+            email TEXT,
             name TEXT,
             age INTEGER,
             gender TEXT,
@@ -37,6 +38,8 @@ def init_database(db_path: str = "./data/medi_sync.db"):
             cycles_enabled BOOLEAN DEFAULT 0,
             last_cycle_date TIMESTAMP,
             reminders_enabled BOOLEAN DEFAULT 1,
+            email_reminders_enabled BOOLEAN DEFAULT 1,
+            email_verified BOOLEAN DEFAULT 0,
             whatsapp_verified BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
