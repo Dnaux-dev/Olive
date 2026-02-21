@@ -4,7 +4,7 @@ User Management API Endpoints
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from ..models import UserCreate, UserUpdate, UserResponse, SuccessResponse
+from ..models import UserCreate, UserUpdate, UserResponse, SuccessResponse, LoginRequest
 from ..services.database_service import get_db_service
 from ..services.firebase_service import get_firebase_service
 import uuid
