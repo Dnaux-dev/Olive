@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from typing import Optional
 import os
 
 class Settings(BaseSettings):
@@ -41,9 +42,12 @@ class Settings(BaseSettings):
     
     # Application
     environment: str = "development"
-    api_url: str = "http://localhost:8000"
-    debug: bool = True
-    secret_key: str = "your_secret_key_change_in_production"
+    api_url: str = os.getenv("API_URL", "http://localhost:8000")
+    debug: bool = os.getenv("DEBUG", "True").lower() == "true"
+    secret_key: str = os.getenv("SECRET_KEY", "your_secret_key_change_in_production")
+    
+    # CORS
+    allowed_origins: str = os.getenv("ALLOWED_ORIGINS", "*")
     
     # Deployment
     railway_api_token: str = ""

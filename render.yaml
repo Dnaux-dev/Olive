@@ -1,0 +1,36 @@
+services:
+  # Backend FastAPI service
+  - type: web
+    name: olive-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: starter # Paid plan required for disk
+    envVars:
+      - key: DATABASE_PATH
+        value: /data/medi_sync.db
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: FIREBASE_SERVICE_ACCOUNT_KEY_PATH
+        value: /etc/secrets/firebase-credentials.json
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/lifecare.json
+    disk:
+      name: olive-data
+      mountPath: /data
+      sizeGB: 1
+
+  # Frontend Next.js service
+  - type: web
+    name: olive-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: olive-backend
+          type: web
+          property: host
