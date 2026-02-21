@@ -9,6 +9,7 @@ from datetime import datetime
 # ==================== User Models ====================
 class UserCreate(BaseModel):
     phone_number: str
+    email: Optional[str] = None
     name: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None
@@ -18,17 +19,22 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None
+    email: Optional[str] = None
     language_preference: Optional[str] = None
     reminders_enabled: Optional[bool] = None
+    email_reminders_enabled: Optional[bool] = None
 
 class UserResponse(BaseModel):
     id: str
     phone_number: str
+    email: Optional[str] = None
     name: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None
     language_preference: str
     reminders_enabled: bool
+    email_reminders_enabled: bool
+    email_verified: bool
     created_at: str
 
 # ==================== Prescription Models ====================

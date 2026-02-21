@@ -131,3 +131,133 @@ def verify_phone(user_id: str):
             status_code=500,
             detail="Failed to send verification code"
         )
+
+@router.post("/{user_id}/verify-email", response_model=SuccessResponse)
+def verify_email(user_id: str):
+    """Send verification OTP to user's email"""
+    from ..services.email_service import get_email_service
+    import random
+    
+    db_service = get_db_service()
+    email_service = get_email_service()
+    
+    user = db_service.get_user(user_id)
+    if not user or not user.get('email'):
+        raise HTTPException(status_code=404, detail="User email not found")
+    
+    # Generate random 6-digit OTP
+    otp_code = str(random.randint(100000, 999999))
+    
+    # Store OTP in audit logs for verification (simplified approach)
+    db_service.log_action(
+        user_id=user_id,
+        action="email_otp_generated",
+        details={"otp": otp_code}
+    )
+    
+    result = email_service.send_otp(user['email'], otp_code, user.get('name', 'User'))
+    
+    if result:
+        return SuccessResponse(
+            success=True,
+            message="Verification email sent"
+        )
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send verification email"
+        )
+
+@router.post("/{user_id}/confirm-email", response_model=SuccessResponse)
+def confirm_email(user_id: str, otp_code: str):
+    """Confirm email OTP"""
+    db_service = get_db_service()
+    
+    # Check latest OTP from audit logs
+    logs = db_service.execute_query(
+        """SELECT details FROM audit_logs 
+           WHERE user_id = ? AND action = 'email_otp_generated' 
+           ORDER BY timestamp DESC LIMIT 1""",
+        (user_id,),
+        fetch_one=True
+    )
+    
+    if not logs:
+        raise HTTPException(status_code=400, detail="No OTP requested")
+    
+    import json
+    saved_otp = json.loads(logs['details']).get('otp')
+    
+    if saved_otp == otp_code:
+        db_service.verify_email(user_id)
+        return SuccessResponse(
+            success=True,
+            message="Email verified successfully"
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid OTP code")
+
+@router.post("/{user_id}/verify-email", response_model=SuccessResponse)
+def verify_email(user_id: str):
+    """Send verification OTP to user's email"""
+    from ..services.email_service import get_email_service
+    import random
+    
+    db_service = get_db_service()
+    email_service = get_email_service()
+    
+    user = db_service.get_user(user_id)
+    if not user or not user.get('email'):
+        raise HTTPException(status_code=404, detail="User email not found")
+    
+    # Generate random 6-digit OTP
+    otp_code = str(random.randint(100000, 999999))
+    
+    # Store OTP in audit logs for verification (simplified approach)
+    db_service.log_action(
+        user_id=user_id,
+        action="email_otp_generated",
+        details={"otp": otp_code}
+    )
+    
+    result = email_service.send_otp(user['email'], otp_code, user.get('name', 'User'))
+    
+    if result:
+        return SuccessResponse(
+            success=True,
+            message="Verification email sent"
+        )
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send verification email"
+        )
+
+@router.post("/{user_id}/confirm-email", response_model=SuccessResponse)
+def confirm_email(user_id: str, otp_code: str):
+    """Confirm email OTP"""
+    db_service = get_db_service()
+    
+    # Check latest OTP from audit logs
+    logs = db_service.execute_query(
+        """SELECT details FROM audit_logs 
+           WHERE user_id = ? AND action = 'email_otp_generated' 
+           ORDER BY timestamp DESC LIMIT 1""",
+        (user_id,),
+        fetch_one=True
+    )
+    
+    if not logs:
+        raise HTTPException(status_code=400, detail="No OTP requested")
+    
+    import json
+    saved_otp = json.loads(logs['details']).get('otp')
+    
+    if saved_otp == otp_code:
+        db_service.verify_email(user_id)
+        return SuccessResponse(
+            success=True,
+            message="Email verified successfully"
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid OTP code")

@@ -87,19 +87,23 @@ class DatabaseService:
         
         self.execute_insert(
             """INSERT INTO users 
-               (id, phone_number, name, age, gender, language_preference, reminders_enabled)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (user_id, user_data['phone_number'], user_data.get('name'),
+               (id, phone_number, email, name, age, gender, language_preference, 
+                reminders_enabled, email_reminders_enabled, email_verified)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, user_data['phone_number'], user_data.get('email'), user_data.get('name'),
              user_data.get('age'), user_data.get('gender'),
              user_data.get('language_preference', 'english'),
-             user_data.get('reminders_enabled', True))
+             user_data.get('reminders_enabled', True),
+             user_data.get('email_reminders_enabled', True),
+             user_data.get('email_verified', False))
         )
         return user_id
     
     def update_user(self, user_id: str, updates: Dict) -> bool:
         """Update user information"""
-        allowed_fields = ['name', 'age', 'gender', 'language_preference', 
-                         'cycles_enabled', 'last_cycle_date', 'reminders_enabled']
+        allowed_fields = ['name', 'age', 'gender', 'email', 'language_preference', 
+                         'cycles_enabled', 'last_cycle_date', 'reminders_enabled', 
+                         'email_reminders_enabled', 'email_verified']
         
         set_clause = ", ".join([f"{k} = ?" for k in updates.keys() if k in allowed_fields])
         values = [v for k, v in updates.items() if k in allowed_fields]
@@ -112,6 +116,13 @@ class DatabaseService:
             )
             return True
         return False
+
+    def verify_email(self, user_id: str) -> bool:
+        """Mark user's email as verified"""
+        return self.execute_update(
+            "UPDATE users SET email_verified = 1 WHERE id = ?",
+            (user_id,)
+        ) > 0
     
     # Prescription operations
     def create_prescription(self, user_id: str, image_url: str = None, ocr_text: str = None) -> int:

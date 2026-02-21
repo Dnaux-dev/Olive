@@ -17,6 +17,8 @@ class ReminderService:
         self.db_service = get_db_service()
         self.firebase_service = get_firebase_service()
         self.whatsapp_service = get_whatsapp_service()
+        from .email_service import get_email_service
+        self.email_service = get_email_service()
     
     def schedule_reminder(self, medication_id: int, reminder_times: List[str]) -> List[int]:
         """
@@ -84,9 +86,10 @@ class ReminderService:
             return self.db_service.get_pending_reminders(limit)
     
     def send_reminder(self, reminder_id: int) -> Dict:
-        """Send a reminder via WhatsApp"""
+        """Send a reminder via WhatsApp and Email"""
         reminder = self.db_service.execute_query(
-            """SELECT r.*, m.drug_name, m.dosage, u.phone_number, u.language_preference
+            """SELECT r.*, m.drug_name, m.dosage, u.phone_number, u.email, 
+                      u.name as user_name, u.language_preference, u.email_reminders_enabled
                FROM reminders r
                JOIN medications m ON r.medication_id = m.id
                JOIN users u ON r.user_id = u.id
@@ -98,25 +101,42 @@ class ReminderService:
         if not reminder:
             return {'success': False, 'error': 'Reminder not found'}
         
-        # Send via WhatsApp
+        results = {'whatsapp': False, 'email': False}
+        errors = []
+
+        # 1. Send via WhatsApp
         medication = {
             'drug_name': reminder['drug_name'],
             'dosage': reminder['dosage']
         }
         
-        result = self.whatsapp_service.send_reminder(
-            reminder['phone_number'],
-            medication,
-            reminder.get('language_preference', 'english')
-        )
+        if reminder['phone_number']:
+            wa_result = self.whatsapp_service.send_reminder(
+                reminder['phone_number'],
+                medication,
+                reminder.get('language_preference', 'english')
+            )
+            results['whatsapp'] = wa_result.get('success', False)
+            if not results['whatsapp']:
+                errors.append(f"WhatsApp: {wa_result.get('error')}")
+
+        # 2. Send via Email
+        if reminder['email'] and reminder.get('email_reminders_enabled'):
+            email_result = self.email_service.send_reminder(
+                reminder['email'],
+                medication,
+                reminder.get('user_name', 'User')
+            )
+            results['email'] = email_result
+            if not email_result:
+                errors.append("Email delivery failed")
         
-        # Update reminder status
-        if result.get('success'):
+        # Update reminder status (Succeed if at least one channel worked)
+        if results['whatsapp'] or results['email']:
             self.db_service.update_reminder(reminder_id, {
                 'sent': True,
                 'sent_at': datetime.now().isoformat(),
-                'delivery_status': 'sent',
-                'whatsapp_message_id': result.get('message_id')
+                'delivery_status': 'sent'
             })
             
             # Push to Firebase for real-time delivery
@@ -131,18 +151,12 @@ class ReminderService:
                 }
             )
             
-            self.firebase_service.update_reminder_status(
-                reminder['user_id'],
-                reminder_id,
-                'sent'
-            )
-            
-            return {'success': True, 'message_id': result.get('message_id')}
+            return {'success': True, 'channels': results}
         else:
             self.db_service.update_reminder(reminder_id, {
                 'delivery_status': 'failed'
             })
-            return {'success': False, 'error': result.get('error')}
+            return {'success': False, 'error': "; ".join(errors)}
     
     def send_all_due_reminders(self) -> Dict:
         """Send all reminders that are due"""
