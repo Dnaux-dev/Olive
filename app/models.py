@@ -43,6 +43,11 @@ class UserResponse(BaseModel):
     email_verified: bool
     created_at: str
 
+class TokenResponse(BaseModel):
+    user: UserResponse
+    access_token: str
+    token_type: str = "bearer"
+
 # ==================== Prescription Models ====================
 class DrugInput(BaseModel):
     drug_name: str
