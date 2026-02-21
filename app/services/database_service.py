@@ -84,7 +84,8 @@ class DatabaseService:
     def create_user(self, user_data: Dict) -> str:
         """Create new user, returns user_id"""
         import bcrypt
-        user_id = user_data.get('id') or str(datetime.now().timestamp())
+        import uuid
+        user_id = user_data.get('id') or str(uuid.uuid4())
         
         # Hash password if provided
         password = user_data.get('password')
