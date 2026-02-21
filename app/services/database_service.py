@@ -83,8 +83,16 @@ class DatabaseService:
     
     def create_user(self, user_data: Dict) -> str:
         """Create new user, returns user_id"""
+        import bcrypt
         user_id = user_data.get('id') or str(datetime.now().timestamp())
         
+        # Hash password if provided
+        password = user_data.get('password')
+        password_hash = None
+        if password:
+            salt = bcrypt.gensalt()
+            password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
         # Use 'or' instead of .get(..., default) to handle explicit None values
         lang = user_data.get('language_preference') or 'english'
         reminders = user_data.get('reminders_enabled') if user_data.get('reminders_enabled') is not None else True
@@ -94,13 +102,28 @@ class DatabaseService:
         self.execute_insert(
             """INSERT INTO users 
                (id, phone_number, email, name, age, gender, language_preference, 
-                reminders_enabled, email_reminders_enabled, email_verified)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                reminders_enabled, email_reminders_enabled, email_verified, password_hash)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (user_id, user_data['phone_number'], user_data.get('email'), user_data.get('name'),
              user_data.get('age'), user_data.get('gender'),
-             lang, reminders, email_reminders, email_verified)
+             lang, reminders, email_reminders, email_verified, password_hash)
         )
         return user_id
+
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verify a password against a hash"""
+        import bcrypt
+        if not hashed_password:
+            return False
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+    def get_user_by_email(self, email: str) -> Optional[Dict]:
+        """Get user by email"""
+        return self.execute_query(
+            "SELECT * FROM users WHERE email = ?",
+            (email,),
+            fetch_one=True
+        )
     
     def update_user(self, user_id: str, updates: Dict) -> bool:
         """Update user information"""

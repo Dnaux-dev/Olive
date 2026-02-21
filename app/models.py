@@ -14,6 +14,7 @@ class UserCreate(BaseModel):
     age: Optional[int] = None
     gender: Optional[str] = None
     language_preference: Optional[str] = 'english'
+    password: str
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None

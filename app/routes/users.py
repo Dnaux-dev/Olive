@@ -18,14 +18,17 @@ def create_user(user_data: UserCreate):
     firebase_service = get_firebase_service()
     
     # Check if user already exists
-    existing = db_service.get_user_by_phone(user_data.phone_number)
-    if existing:
+    if user_data.email:
+        existing = db_service.get_user_by_email(user_data.email)
+        if existing:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+    
+    existing_phone = db_service.get_user_by_phone(user_data.phone_number)
+    if existing_phone:
         raise HTTPException(status_code=400, detail="User with this phone number already exists")
     
     # Create user in SQLite
     user_data_dict = user_data.model_dump()
-    user_data_dict['id'] = str(uuid.uuid4())
-    
     user_id = db_service.create_user(user_data_dict)
     
     # Create Firebase structure
@@ -33,6 +36,20 @@ def create_user(user_data: UserCreate):
     
     # Return created user
     user = db_service.get_user(user_id)
+    return UserResponse(**user)
+
+@router.post("/login", response_model=UserResponse)
+def login(login_data: LoginRequest):
+    """Login with email and password"""
+    db_service = get_db_service()
+    
+    user = db_service.get_user_by_email(login_data.email)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not db_service.verify_password(login_data.password, user.get('password_hash')):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
     return UserResponse(**user)
 
 @router.get("/{user_id}", response_model=UserResponse)
