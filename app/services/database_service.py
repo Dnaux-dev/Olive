@@ -85,6 +85,12 @@ class DatabaseService:
         """Create new user, returns user_id"""
         user_id = user_data.get('id') or str(datetime.now().timestamp())
         
+        # Use 'or' instead of .get(..., default) to handle explicit None values
+        lang = user_data.get('language_preference') or 'english'
+        reminders = user_data.get('reminders_enabled') if user_data.get('reminders_enabled') is not None else True
+        email_reminders = user_data.get('email_reminders_enabled') if user_data.get('email_reminders_enabled') is not None else True
+        email_verified = user_data.get('email_verified') if user_data.get('email_verified') is not None else False
+
         self.execute_insert(
             """INSERT INTO users 
                (id, phone_number, email, name, age, gender, language_preference, 
@@ -92,10 +98,7 @@ class DatabaseService:
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (user_id, user_data['phone_number'], user_data.get('email'), user_data.get('name'),
              user_data.get('age'), user_data.get('gender'),
-             user_data.get('language_preference', 'english'),
-             user_data.get('reminders_enabled', True),
-             user_data.get('email_reminders_enabled', True),
-             user_data.get('email_verified', False))
+             lang, reminders, email_reminders, email_verified)
         )
         return user_id
     

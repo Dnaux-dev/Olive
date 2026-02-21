@@ -31,7 +31,7 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None
-    language_preference: str
+    language_preference: Optional[str] = 'english'
     reminders_enabled: bool
     email_reminders_enabled: bool
     email_verified: bool
