@@ -40,6 +40,7 @@ def init_database(db_path: str = "./data/medi_sync.db"):
             reminders_enabled BOOLEAN DEFAULT 1,
             email_reminders_enabled BOOLEAN DEFAULT 1,
             email_verified BOOLEAN DEFAULT 0,
+            password_hash TEXT,
             whatsapp_verified BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

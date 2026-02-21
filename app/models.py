@@ -23,6 +23,11 @@ class UserUpdate(BaseModel):
     language_preference: Optional[str] = None
     reminders_enabled: Optional[bool] = None
     email_reminders_enabled: Optional[bool] = None
+    password: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 class UserResponse(BaseModel):
     id: str
