@@ -13,7 +13,7 @@ firebase-admin==6.4.0
 # External APIs
 google-cloud-vision==3.5.0
 requests==2.31.0
-pillow==10.1.0
+pillow>=10.2.0
 
 # Background Jobs
 apscheduler==3.10.4
