@@ -35,6 +35,10 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false # Requires a long random string
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM_EMAIL
+        sync: false
 
   # Frontend Next.js service
   - type: web

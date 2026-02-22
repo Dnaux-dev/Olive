@@ -15,21 +15,58 @@ class EmailService:
     
     def __init__(self):
         self.settings = get_settings()
+        self.brevo_enabled = bool(self.settings.brevo_api_key)
         self.resend_enabled = bool(self.settings.resend_api_key)
         self.smtp_enabled = bool(self.settings.smtp_username and self.settings.smtp_password)
         
-        if not self.resend_enabled and not self.smtp_enabled:
-            logger.warning("Email service disabled: No Resend API key or SMTP credentials provided")
+        if not self.brevo_enabled and not self.resend_enabled and not self.smtp_enabled:
+            logger.warning("Email service disabled: No Brevo, Resend, or SMTP credentials provided")
     
     def _send_email(self, to_email: str, subject: str, html_body: str) -> bool:
         """Core method to send email using prioritized providers"""
-        if self.resend_enabled:
+        if self.brevo_enabled:
+            return self._send_via_brevo(to_email, subject, html_body)
+        elif self.resend_enabled:
             return self._send_via_resend(to_email, subject, html_body)
         elif self.smtp_enabled:
             return self._send_via_smtp(to_email, subject, html_body)
             
         logger.info(f"MOCK EMAIL to {to_email}: {subject}")
         return True
+
+    def _send_via_brevo(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Send email via Brevo API"""
+        try:
+            response = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": self.settings.brevo_api_key,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                json={
+                    "sender": {"email": self.settings.brevo_from_email, "name": "Medi-Sync AI"},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": html_body
+                },
+                timeout=10
+            )
+            
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"Email sent via Brevo to {to_email}")
+                return True
+            else:
+                logger.error(f"Brevo API error: {response.status_code} - {response.text}")
+                # Fallback to other providers if Brevo fails
+                if self.resend_enabled:
+                    return self._send_via_resend(to_email, subject, html_body)
+                elif self.smtp_enabled:
+                    return self._send_via_smtp(to_email, subject, html_body)
+                return False
+        except Exception as e:
+            logger.error(f"Failed to send email via Brevo: {e}")
+            return False
 
     def _send_via_resend(self, to_email: str, subject: str, html_body: str) -> bool:
         """Send email via Resend API"""

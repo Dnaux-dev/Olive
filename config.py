@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_email: str = "noreply@medisync.ai"
     
+    # Brevo (Free)
+    brevo_api_key: str = os.getenv("BREVO_API_KEY", "")
+    brevo_from_email: str = os.getenv("BREVO_FROM_EMAIL", "noreply@medisync.ai")
+    
     # Database
     database_path: str = "./data/medi_sync.db"
     
