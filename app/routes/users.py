@@ -2,7 +2,7 @@
 User Management API Endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from typing import List
 from ..models import UserCreate, UserUpdate, UserResponse, SuccessResponse, LoginRequest, TokenResponse
 from ..services.database_service import get_db_service
@@ -13,7 +13,7 @@ import uuid
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 @router.post("/", response_model=TokenResponse)
-def create_user(user_data: UserCreate):
+def create_user(user_data: UserCreate, background_tasks: BackgroundTasks):
     """Create a new user"""
     db_service = get_db_service()
     firebase_service = get_firebase_service()
@@ -37,10 +37,7 @@ def create_user(user_data: UserCreate):
     
     # Automatically trigger email verification if email provided
     if user_data.email:
-        try:
-            initiate_email_verification(user_id)
-        except Exception as e:
-            print(f"Failed to send initial verification email: {e}")
+        background_tasks.add_task(initiate_email_verification, user_id)
     
     # Return created user with token
     user_data = db_service.get_user(user_id)
