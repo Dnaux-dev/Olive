@@ -100,12 +100,12 @@ async def get_drug_generics(drug_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/sync-emdex", response_model=SuccessResponse)
-def sync_emdex_database(force: bool = False):
-    """Sync Emdex drug database to local cache"""
+async def sync_emdex_database(force: bool = False):
+    """Sync Emdex drug database to local cache (Async)"""
     drug_service = get_drug_service()
     
     try:
-        synced_count = drug_service.sync_emdex_cache(force=force)
+        synced_count = await drug_service.sync_emdex_cache(force=force)
         
         return SuccessResponse(
             success=True,

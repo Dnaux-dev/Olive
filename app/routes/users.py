@@ -190,9 +190,9 @@ def verify_phone(user_id: str):
         )
 
 @router.post("/{user_id}/verify-email", response_model=SuccessResponse)
-def verify_email(user_id: str):
-    """Manually trigger verification OTP to user's email"""
-    if initiate_email_verification(user_id):
+async def verify_email(user_id: str):
+    """Manually trigger verification OTP to user's email (Async)"""
+    if await initiate_email_verification(user_id):
         return SuccessResponse(
             success=True,
             message="Verification email sent"

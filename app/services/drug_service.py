@@ -249,12 +249,12 @@ class DrugService:
         match = await self.match_drug_emdex(drug_name)
         return match.generics if match else []
     
-    def sync_emdex_cache(self, force: bool = False) -> int:
+    async def sync_emdex_cache(self, force: bool = False) -> int:
         """
-        Sync Emdex database to local cache
+        Sync Emdex database to local cache (Async)
         Returns number of drugs synced
         """
-        if not self.emdex_api_key:
+        if not self.emdex_api_key or self.emdex_api_key == "your_emdex_key":
             print("Emdex API key not configured, skipping sync")
             return 0
         
@@ -268,45 +268,45 @@ class DrugService:
             synced_count = 0
             page = 1
             
-            while True:
-                response = requests.get(
-                    f'{self.emdex_api_url}/drugs',
-                    headers=headers,
-                    params={'page': page, 'limit': 100},
-                    timeout=10
-                )
-                
-                if response.status_code != 200:
-                    break
-                
-                data = response.json()
-                if not data.get('results'):
-                    break
-                
-                for drug in data['results']:
-                    try:
-                        self.db_service.create_drug({
-                            'emdex_id': drug.get('id'),
-                            'name': drug.get('name'),
-                            'generic_name': drug.get('generic_name'),
-                            'therapeutic_class': drug.get('therapeutic_class'),
-                            'price_naira': drug.get('price', 0),
-                            'manufacturer': drug.get('manufacturer'),
-                            'generics': json.dumps(drug.get('generics', [])),
-                            'warnings': json.dumps(drug.get('warnings', [])),
-                            'nafdac_verified': drug.get('nafdac_verified', False)
-                        })
-                        synced_count += 1
-                    except Exception as e:
-                        print(f"Error caching drug {drug.get('name')}: {e}")
-                
-                page += 1
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                while True:
+                    response = await client.get(
+                        f'{self.emdex_api_url}/drugs',
+                        headers=headers,
+                        params={'page': page, 'limit': 100}
+                    )
+                    
+                    if response.status_code != 200:
+                        break
+                    
+                    data = response.json()
+                    if not data.get('results'):
+                        break
+                    
+                    for drug in data['results']:
+                        try:
+                            self.db_service.create_drug({
+                                'emdex_id': drug.get('id'),
+                                'name': drug.get('name'),
+                                'generic_name': drug.get('generic_name'),
+                                'therapeutic_class': drug.get('therapeutic_class'),
+                                'price_naira': drug.get('price', 0),
+                                'manufacturer': drug.get('manufacturer'),
+                                'generics': json.dumps(drug.get('generics', [])),
+                                'warnings': json.dumps(drug.get('warnings', [])),
+                                'nafdac_verified': drug.get('nafdac_verified', False)
+                            })
+                            synced_count += 1
+                        except Exception as e:
+                            logger.error(f"Error caching drug {drug.get('name')}: {e}")
+                    
+                    page += 1
             
-            print(f"Synced {synced_count} drugs to local cache")
+            logger.info(f"Synced {synced_count} drugs to local cache")
             return synced_count
         
         except Exception as e:
-            print(f"Error syncing Emdex cache: {e}")
+            logger.error(f"Error syncing Emdex cache: {e}", exc_info=True)
             return 0
 
 # Singleton instance
