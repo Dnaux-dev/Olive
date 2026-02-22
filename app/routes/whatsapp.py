@@ -170,8 +170,8 @@ async def handle_image_message(phone_number: str, user_id: str, image_id: str) -
             # Extract text
             ocr_text, confidence = ocr_service.extract_text_from_image(tmp_path)
             
-            # Parse drugs
-            drugs = ocr_service.parse_prescription(ocr_text)
+            # Parse drugs (with AI fallback for tablet images)
+            drugs = await ocr_service.parse_prescription(ocr_text, tmp_path)
             
             if not drugs:
                 return "I couldn't identify any medications in the image. Please make sure it's a clear prescription."

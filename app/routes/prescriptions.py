@@ -64,8 +64,8 @@ async def upload_prescription_image(
         # Extract text from image
         ocr_text, confidence = ocr_service.extract_text_from_image(tmp_path)
         
-        # Parse drugs from OCR text
-        drugs = ocr_service.parse_prescription(ocr_text)
+        # Parse drugs from OCR text (with AI fallback for tablet images)
+        drugs = await ocr_service.parse_prescription(ocr_text, tmp_path)
         
         # Create prescription in database
         prescription_id = db_service.create_prescription(
@@ -88,7 +88,7 @@ async def upload_prescription_image(
             
             # Match against Emdex if enabled
             if auto_match:
-                match = drug_service.match_drug_emdex(drug.name, drug.dosage)
+                match = await drug_service.match_drug_emdex(drug.name, drug.dosage)
                 if match:
                     drug.emdex_id = match.emdex_id
             

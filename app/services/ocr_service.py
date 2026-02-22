@@ -9,6 +9,7 @@ from google.cloud import vision
 from config import get_settings
 import base64
 import os
+from .ai_service import get_ai_service
 
 class DrugInfo:
     """Extracted drug information from prescription"""
@@ -40,6 +41,8 @@ class OCRService:
             except Exception as e:
                 print(f"Failed to initialize Vision API: {e}")
                 self.use_mock = True
+        
+        self.ai_service = get_ai_service()
     
     def extract_text_from_image(self, image_path: str) -> Tuple[str, float]:
         """
@@ -97,12 +100,26 @@ class OCRService:
         """
         return mock_ocr_text, 0.92
     
-    def parse_prescription(self, ocr_text: str) -> List[DrugInfo]:
+    async def parse_prescription(self, ocr_text: str, image_path: str = None) -> List[DrugInfo]:
         """
-        Parse OCR text to extract drug information
-        Uses simple pattern matching and AI-like rules
+        Parse OCR text to extract drug information.
+        If OCR text is sparse and image_path is provided, uses Gemini Vision fallback.
         """
         drugs = []
+        
+        # Heuristic: If OCR text is very short or doesn't look like a prescription, 
+        # use Gemini Vision if an image is provided.
+        if image_path and (len(ocr_text) < 50 or "Rx:" not in ocr_text):
+            logger.info("Standard OCR sparse, attempting Gemini Vision analysis...")
+            ai_data = await self.ai_service.get_drug_info_from_image(image_path)
+            if ai_data and ai_data.get('drug_name'):
+                return [DrugInfo(
+                    name=ai_data.get('drug_name'),
+                    dosage=ai_data.get('dosage'),
+                    frequency=ai_data.get('frequency'),
+                    duration=ai_data.get('duration')
+                )]
+
         lines = [line.strip() for line in ocr_text.split('\n') if line.strip()]
         
         seen_drugs = set()

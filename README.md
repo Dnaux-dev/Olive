@@ -12,7 +12,7 @@ Prescription management and medication reminder system built with FastAPI, SQLit
 - **☁️ Real-time Sync**: SQLite-based offline storage with Firebase real-time sync.
 - **🌍 Multi-language**: Support for English, Yoruba, Hausa, and Igbo.
 
-## Tech Stack
+## Tech Stack the multi l
 
 - **Framework**: FastAPI
 - **Security**: Bcrypt (Password Hashing)

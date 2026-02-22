@@ -5,10 +5,14 @@ Handles drug matching, generic finding, and Emdex API integration
 
 import requests
 import json
+import logging
 from typing import List, Dict, Optional, Tuple
 from config import get_settings
 from .database_service import get_db_service
+from .ai_service import get_ai_service
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 class Generic:
     """Generic drug information"""
@@ -55,11 +59,12 @@ class DrugService:
         self.emdex_api_key = settings.emdex_api_key
         self.emdex_api_url = settings.emdex_api_url
         self.db_service = get_db_service()
+        self.ai_service = get_ai_service()
     
-    def match_drug_emdex(self, drug_name: str, dosage: str = None) -> Optional[DrugMatch]:
+    async def match_drug_emdex(self, drug_name: str, dosage: str = None) -> Optional[DrugMatch]:
         """
-        Match drug against Emdex database
-        Falls back to local SQLite cache if API fails
+        Match drug against Emdex database.
+        Fallback order: local cache -> Emdex API -> Gemini AI -> basic mock.
         """
         # First check local cache
         cached = self._search_local_drugs(drug_name)
@@ -74,8 +79,36 @@ class DrugService:
                 self.db_service.create_drug(emdex_result)
                 return self._dict_to_drug_match(emdex_result)
         
-        # Fallback: create basic match with mock data
+        # Fallback: Try Gemini AI
+        ai_match = await self._search_via_ai(drug_name)
+        if ai_match:
+            return ai_match
+        
+        # Final fallback: create basic match with mock data
         return self._mock_drug_match(drug_name)
+
+    async def _search_via_ai(self, drug_name: str) -> Optional[DrugMatch]:
+        """Search for drug details using AI fallback"""
+        logger.info(f"Using AI fallback for drug lookup: {drug_name}")
+        ai_data = await self.ai_service.lookup_drug_details(drug_name)
+        
+        if not ai_data or not ai_data.get('name'):
+            return None
+        
+        # Cache the AI result for future use
+        drug_dict = {
+            'emdex_id': f"AI-{drug_name[:3].upper()}",
+            'name': ai_data.get('name'),
+            'generic_name': ai_data.get('generic_name'),
+            'price_naira': ai_data.get('price_naira', 2000),
+            'manufacturer': ai_data.get('manufacturer', 'Unknown'),
+            'therapeutic_class': ai_data.get('therapeutic_class'),
+            'warnings': json.dumps(ai_data.get('warnings', [])),
+            'generics': json.dumps(ai_data.get('generics', []))
+        }
+        
+        self.db_service.create_drug(drug_dict)
+        return self._dict_to_drug_match(drug_dict)
     
     def _search_emdex(self, drug_name: str) -> Optional[Dict]:
         """Search Emdex API for drug"""
@@ -203,9 +236,9 @@ class DrugService:
         
         return match
     
-    def get_generics(self, drug_name: str) -> List[Generic]:
+    async def get_generics(self, drug_name: str) -> List[Generic]:
         """Get generic alternatives for a drug"""
-        match = self.match_drug_emdex(drug_name)
+        match = await self.match_drug_emdex(drug_name)
         return match.generics if match else []
     
     def sync_emdex_cache(self, force: bool = False) -> int:

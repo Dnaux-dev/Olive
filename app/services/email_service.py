@@ -1,6 +1,6 @@
 """
-Email Service Layer
-Handles sending OTPs and medication reminders via Resend API or SMTP
+Email & SMS Service Layer
+Handles sending OTPs and medication reminders via Brevo, Resend, or SMTP
 """
 
 import logging
@@ -18,6 +18,7 @@ class EmailService:
         self.brevo_enabled = bool(self.settings.brevo_api_key)
         self.resend_enabled = bool(self.settings.resend_api_key)
         self.smtp_enabled = bool(self.settings.smtp_username and self.settings.smtp_password)
+        self.sms_enabled = bool(self.settings.brevo_api_key)
         
         if not self.brevo_enabled and not self.resend_enabled and not self.smtp_enabled:
             logger.warning("Email service disabled: No Brevo, Resend, or SMTP credentials provided")
@@ -66,6 +67,39 @@ class EmailService:
                 return False
         except Exception as e:
             logger.error(f"Failed to send email via Brevo: {e}")
+            return False
+
+    def send_sms(self, to_phone: str, message: str) -> bool:
+        """Send SMS via Brevo API"""
+        if not self.sms_enabled:
+            logger.warning(f"SMS disabled. MOCK SMS to {to_phone}: {message}")
+            return True
+            
+        try:
+            response = requests.post(
+                "https://api.brevo.com/v3/transactionalSMS/sms",
+                headers={
+                    "api-key": self.settings.brevo_api_key,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                json={
+                    "type": "transactional",
+                    "sender": "OliveAI",
+                    "recipient": to_phone,
+                    "content": message
+                },
+                timeout=10
+            )
+            
+            if response.status_code in [200, 201]:
+                logger.info(f"SMS sent via Brevo to {to_phone}")
+                return True
+            else:
+                logger.error(f"Brevo SMS API error: {response.status_code} - {response.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to send SMS via Brevo: {e}")
             return False
 
     def _send_via_resend(self, to_email: str, subject: str, html_body: str) -> bool:

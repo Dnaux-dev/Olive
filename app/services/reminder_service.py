@@ -101,7 +101,7 @@ class ReminderService:
         if not reminder:
             return {'success': False, 'error': 'Reminder not found'}
         
-        results = {'whatsapp': False, 'email': False}
+        results = {'whatsapp': False, 'email': False, 'sms': False}
         errors = []
 
         # 1. Send via WhatsApp
@@ -131,8 +131,24 @@ class ReminderService:
             if not email_result:
                 errors.append("Email delivery failed")
         
+        # 3. Send via SMS
+        if reminder['phone_number']:
+            sms_message = f"🔔 Olive-AI Reminder: Time to take your {reminder['drug_name']} {reminder['dosage']}."
+            # Simple localization for SMS
+            if reminder.get('language_preference') == 'yoruba':
+                sms_message = f"🔔 Olive-AI: Akoko lati mu {reminder['drug_name']} {reminder['dosage']} re ti to."
+            elif reminder.get('language_preference') == 'hausa':
+                sms_message = f"🔔 Olive-AI: Lokacin shan maganin {reminder['drug_name']} {reminder['dosage']} ya yi."
+            elif reminder.get('language_preference') == 'igbo':
+                sms_message = f"🔔 Olive-AI: Oge erugo iji {reminder['drug_name']} {reminder['dosage']} gị."
+
+            sms_result = self.email_service.send_sms(reminder['phone_number'], sms_message)
+            results['sms'] = sms_result
+            if not sms_result:
+                errors.append("SMS delivery failed")
+        
         # Update reminder status (Succeed if at least one channel worked)
-        if results['whatsapp'] or results['email']:
+        if results['whatsapp'] or results['email'] or results['sms']:
             self.db_service.update_reminder(reminder_id, {
                 'sent': True,
                 'sent_at': datetime.now().isoformat(),

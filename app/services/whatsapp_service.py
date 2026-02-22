@@ -168,10 +168,10 @@ class WhatsAppService:
                      language: str = 'english') -> Dict:
         """Send medication reminder"""
         message_templates = {
-            'english': "🔔 Medication Reminder: Time to take {drug_name} {dosage}. Please confirm by replying 'taken'.",
-            'yoruba': "🔔 Akiyesi Oogun: O wa ni iye lati gba {drug_name} {dosage}. Jowu inu 'taken'.",
-            'hausa': "🔔 Turindin Magun: Lokaci ne na shan {drug_name} {dosage}. Tabbaci ta hanyar sako 'taken'.",
-            'igbo': "🔔 Ihe ndu nke Igwu: Oge iji {drug_name} {dosage}. Nyeakwa isi 'taken'."
+            'english': "🔔 Olive-AI Reminder: Time to take your {drug_name} {dosage}. Please confirm by replying 'taken'.",
+            'yoruba': "🔔 Olive-AI: Akoko yi to lati mu oogun {drug_name} {dosage} re. Jowo fesi pẹlu 'taken' lati jẹrisi.",
+            'hausa': "🔔 Olive-AI: Lokacin shan maganin {drug_name} {dosage} ya yi. Da fatan za a amsa da 'taken' don tabbatarwa.",
+            'igbo': "🔔 Olive-AI: Oge erugo iji ọgwụ {drug_name} {dosage} gị. Biko zaghachi 'taken' iji gosi na i rila ya."
         }
         
         template = message_templates.get(language, message_templates['english'])

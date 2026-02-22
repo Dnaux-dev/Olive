@@ -22,7 +22,7 @@ def verify_drug(request: DrugVerificationRequest):
     return DrugVerificationResponse(**result)
 
 @router.get("/search", response_model=DrugSearchResponse)
-def search_drugs(query: str):
+async def search_drugs(query: str):
     """Search drugs by name"""
     if not query or len(query) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
@@ -36,7 +36,7 @@ def search_drugs(query: str):
         
         # If no results, try Emdex API
         if not results:
-            match = drug_service.match_drug_emdex(query)
+            match = await drug_service.match_drug_emdex(query)
             if match:
                 results = [match.to_dict()]
         
@@ -88,12 +88,12 @@ def get_drug(emdex_id: str):
     return DrugResponse(**match.to_dict())
 
 @router.get("/{drug_name}/generics", response_model=List[GenericResponse])
-def get_drug_generics(drug_name: str):
+async def get_drug_generics(drug_name: str):
     """Get generic alternatives for a drug"""
     drug_service = get_drug_service()
     
     try:
-        generics = drug_service.get_generics(drug_name)
+        generics = await drug_service.get_generics(drug_name)
         return [GenericResponse(**g.to_dict()) for g in generics]
     
     except Exception as e:
@@ -117,12 +117,12 @@ def sync_emdex_database(force: bool = False):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/prices/compare", response_model=SuccessResponse)
-def compare_drug_prices(drug_name: str):
+async def compare_drug_prices(drug_name: str):
     """Compare prices for drug and its generics"""
     drug_service = get_drug_service()
     
     try:
-        match = drug_service.match_drug_emdex(drug_name)
+        match = await drug_service.match_drug_emdex(drug_name)
         
         if not match:
             raise HTTPException(status_code=404, detail="Drug not found")
