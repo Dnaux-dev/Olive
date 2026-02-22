@@ -3,7 +3,7 @@ Drug Service
 Handles drug matching, generic finding, and Emdex API integration
 """
 
-import requests
+import httpx
 import json
 import logging
 from typing import List, Dict, Optional, Tuple
@@ -73,7 +73,7 @@ class DrugService:
         
         # Try Emdex API
         if self.emdex_api_key:
-            emdex_result = self._search_emdex(drug_name)
+            emdex_result = await self._search_emdex(drug_name)
             if emdex_result:
                 # Cache the result
                 self.db_service.create_drug(emdex_result)
@@ -110,8 +110,11 @@ class DrugService:
         self.db_service.create_drug(drug_dict)
         return self._dict_to_drug_match(drug_dict)
     
-    def _search_emdex(self, drug_name: str) -> Optional[Dict]:
-        """Search Emdex API for drug"""
+    async def _search_emdex(self, drug_name: str) -> Optional[Dict]:
+        """Search Emdex API for drug (Async)"""
+        if not self.emdex_api_key or self.emdex_api_key == "your_emdex_key":
+            return None
+            
         try:
             headers = {
                 'Authorization': f'Bearer {self.emdex_api_key}',
@@ -120,16 +123,16 @@ class DrugService:
             
             params = {'search': drug_name, 'limit': 1}
             
-            response = requests.get(
-                f'{self.emdex_api_url}/drugs/search',
-                headers=headers,
-                params=params,
-                timeout=5
-            )
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(
+                    f'{self.emdex_api_url}/drugs/search',
+                    headers=headers,
+                    params=params
+                )
             
             if response.status_code == 200:
                 data = response.json()
-                if data.get('results'):
+                if data.get('results') and len(data['results']) > 0:
                     drug = data['results'][0]
                     return {
                         'emdex_id': drug.get('id'),
@@ -141,8 +144,13 @@ class DrugService:
                         'warnings': json.dumps(drug.get('warnings', [])),
                         'nafdac_verified': drug.get('nafdac_verified', False)
                     }
+            else:
+                logger.warning(f"Emdex API returned status {response.status_code}: {response.text}")
+                
+        except httpx.TimeoutException:
+            logger.error(f"Emdex API timeout while searching for {drug_name}")
         except Exception as e:
-            print(f"Emdex API error: {e}")
+            logger.error(f"Emdex API error: {e}", exc_info=True)
         
         return None
     

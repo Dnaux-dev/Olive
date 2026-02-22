@@ -125,8 +125,8 @@ def update_reminder(reminder_id: int, reminder_data: ReminderUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{reminder_id}/send", response_model=SuccessResponse)
-def send_reminder(reminder_id: int):
-    """Send a reminder"""
+async def send_reminder(reminder_id: int):
+    """Send a reminder (Async)"""
     db_service = get_db_service()
     reminder_service = get_reminder_service()
     
@@ -140,7 +140,7 @@ def send_reminder(reminder_id: int):
         raise HTTPException(status_code=404, detail="Reminder not found")
     
     try:
-        result = reminder_service.send_reminder(reminder_id)
+        result = await reminder_service.send_reminder(reminder_id)
         
         if result['success']:
             return SuccessResponse(
@@ -157,12 +157,12 @@ def send_reminder(reminder_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/pending/send-all", response_model=RemindersResult)
-def send_all_due_reminders():
-    """Send all reminders that are currently due"""
+async def send_all_due_reminders():
+    """Send all reminders that are currently due (Async)"""
     reminder_service = get_reminder_service()
     
     try:
-        results = reminder_service.send_all_due_reminders()
+        results = await reminder_service.send_all_due_reminders()
         return RemindersResult(**results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

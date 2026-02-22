@@ -85,8 +85,8 @@ class ReminderService:
         else:
             return self.db_service.get_pending_reminders(limit)
     
-    def send_reminder(self, reminder_id: int) -> Dict:
-        """Send a reminder via WhatsApp and Email"""
+    async def send_reminder(self, reminder_id: int) -> Dict:
+        """Send a reminder via WhatsApp and Email (Async)"""
         reminder = self.db_service.execute_query(
             """SELECT r.*, m.drug_name, m.dosage, u.phone_number, u.email, 
                       u.name as user_name, u.language_preference, u.email_reminders_enabled
@@ -111,7 +111,7 @@ class ReminderService:
         }
         
         if reminder['phone_number']:
-            wa_result = self.whatsapp_service.send_reminder(
+            wa_result = await self.whatsapp_service.send_reminder(
                 reminder['phone_number'],
                 medication,
                 reminder.get('language_preference', 'english')
@@ -122,7 +122,7 @@ class ReminderService:
 
         # 2. Send via Email
         if reminder['email'] and reminder.get('email_reminders_enabled'):
-            email_result = self.email_service.send_reminder(
+            email_result = await self.email_service.send_reminder(
                 reminder['email'],
                 medication,
                 reminder.get('user_name', 'User')
@@ -142,7 +142,7 @@ class ReminderService:
             elif reminder.get('language_preference') == 'igbo':
                 sms_message = f"🔔 Olive-AI: Oge erugo iji {reminder['drug_name']} {reminder['dosage']} gị."
 
-            sms_result = self.email_service.send_sms(reminder['phone_number'], sms_message)
+            sms_result = await self.email_service.send_sms(reminder['phone_number'], sms_message)
             results['sms'] = sms_result
             if not sms_result:
                 errors.append("SMS delivery failed")
@@ -174,8 +174,8 @@ class ReminderService:
             })
             return {'success': False, 'error': "; ".join(errors)}
     
-    def send_all_due_reminders(self) -> Dict:
-        """Send all reminders that are due"""
+    async def send_all_due_reminders(self) -> Dict:
+        """Send all reminders that are due (Async)"""
         pending = self.get_pending_reminders()
         
         results = {
@@ -185,7 +185,7 @@ class ReminderService:
         }
         
         for reminder in pending:
-            result = self.send_reminder(reminder['id'])
+            result = await self.send_reminder(reminder['id'])
             if result['success']:
                 results['sent'] += 1
             else:

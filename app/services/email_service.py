@@ -4,7 +4,7 @@ Handles sending OTPs and medication reminders via Brevo, Resend, or SMTP
 """
 
 import logging
-import requests
+import httpx
 from config import get_settings
 from typing import Dict, List, Optional
 
@@ -23,36 +23,36 @@ class EmailService:
         if not self.brevo_enabled and not self.resend_enabled and not self.smtp_enabled:
             logger.warning("Email service disabled: No Brevo, Resend, or SMTP credentials provided")
     
-    def _send_email(self, to_email: str, subject: str, html_body: str) -> bool:
-        """Core method to send email using prioritized providers"""
+    async def _send_email(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Core method to send email using prioritized providers (Async)"""
         if self.brevo_enabled:
-            return self._send_via_brevo(to_email, subject, html_body)
+            return await self._send_via_brevo(to_email, subject, html_body)
         elif self.resend_enabled:
-            return self._send_via_resend(to_email, subject, html_body)
+            return await self._send_via_resend(to_email, subject, html_body)
         elif self.smtp_enabled:
-            return self._send_via_smtp(to_email, subject, html_body)
+            return await self._send_via_smtp(to_email, subject, html_body)
             
         logger.info(f"MOCK EMAIL to {to_email}: {subject}")
         return True
 
-    def _send_via_brevo(self, to_email: str, subject: str, html_body: str) -> bool:
-        """Send email via Brevo API"""
+    async def _send_via_brevo(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Send email via Brevo API (Async)"""
         try:
-            response = requests.post(
-                "https://api.brevo.com/v3/smtp/email",
-                headers={
-                    "api-key": self.settings.brevo_api_key,
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                json={
-                    "sender": {"email": self.settings.brevo_from_email, "name": "Olive-AI"},
-                    "to": [{"email": to_email}],
-                    "subject": subject,
-                    "htmlContent": html_body
-                },
-                timeout=10
-            )
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={
+                        "api-key": self.settings.brevo_api_key,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    json={
+                        "sender": {"email": self.settings.brevo_from_email, "name": "Olive-AI"},
+                        "to": [{"email": to_email}],
+                        "subject": subject,
+                        "htmlContent": html_body
+                    }
+                )
             
             if response.status_code in [200, 201, 202]:
                 logger.info(f"Email sent via Brevo to {to_email}")
@@ -61,36 +61,36 @@ class EmailService:
                 logger.error(f"Brevo API error: {response.status_code} - {response.text}")
                 # Fallback to other providers if Brevo fails
                 if self.resend_enabled:
-                    return self._send_via_resend(to_email, subject, html_body)
+                    return await self._send_via_resend(to_email, subject, html_body)
                 elif self.smtp_enabled:
-                    return self._send_via_smtp(to_email, subject, html_body)
+                    return await self._send_via_smtp(to_email, subject, html_body)
                 return False
         except Exception as e:
             logger.error(f"Failed to send email via Brevo: {e}")
             return False
 
-    def send_sms(self, to_phone: str, message: str) -> bool:
-        """Send SMS via Brevo API"""
+    async def send_sms(self, to_phone: str, message: str) -> bool:
+        """Send SMS via Brevo API (Async)"""
         if not self.sms_enabled:
             logger.warning(f"SMS disabled. MOCK SMS to {to_phone}: {message}")
             return True
             
         try:
-            response = requests.post(
-                "https://api.brevo.com/v3/transactionalSMS/sms",
-                headers={
-                    "api-key": self.settings.brevo_api_key,
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                json={
-                    "type": "transactional",
-                    "sender": "OliveAI",
-                    "recipient": to_phone,
-                    "content": message
-                },
-                timeout=10
-            )
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    "https://api.brevo.com/v3/transactionalSMS/sms",
+                    headers={
+                        "api-key": self.settings.brevo_api_key,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    json={
+                        "type": "transactional",
+                        "sender": "OliveAI",
+                        "recipient": to_phone,
+                        "content": message
+                    }
+                )
             
             if response.status_code in [200, 201]:
                 logger.info(f"SMS sent via Brevo to {to_phone}")
@@ -102,23 +102,23 @@ class EmailService:
             logger.error(f"Failed to send SMS via Brevo: {e}")
             return False
 
-    def _send_via_resend(self, to_email: str, subject: str, html_body: str) -> bool:
-        """Send email via Resend API"""
+    async def _send_via_resend(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Send email via Resend API (Async)"""
         try:
-            response = requests.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {self.settings.resend_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "from": self.settings.resend_from_email,
-                    "to": to_email,
-                    "subject": subject,
-                    "html": html_body,
-                },
-                timeout=10
-            )
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {self.settings.resend_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": self.settings.resend_from_email,
+                        "to": to_email,
+                        "subject": subject,
+                        "html": html_body,
+                    }
+                )
             
             if response.status_code in [200, 201]:
                 logger.info(f"Email sent via Resend to {to_email}")
@@ -130,8 +130,8 @@ class EmailService:
             logger.error(f"Failed to send email via Resend: {e}")
             return False
 
-    def _send_via_smtp(self, to_email: str, subject: str, html_body: str) -> bool:
-        """Send email via legacy SMTP"""
+    async def _send_via_smtp(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Send email via legacy SMTP (Async Wrapper)"""
         import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
@@ -153,8 +153,8 @@ class EmailService:
             logger.error(f"Failed to send email via SMTP to {to_email}: {e}")
             return False
 
-    def send_otp(self, to_email: str, otp_code: str, user_name: str = "User") -> bool:
-        """Send OTP verification code"""
+    async def send_otp(self, to_email: str, otp_code: str, user_name: str = "User") -> bool:
+        """Send OTP verification code (Async)"""
         subject = "Verify your Olive-AI account"
         body = f"""
         <html>
@@ -174,8 +174,8 @@ class EmailService:
         """
         return self._send_email(to_email, subject, body)
 
-    def send_reminder(self, to_email: str, medication: Dict, user_name: str = "User") -> bool:
-        """Send medication reminder"""
+    async def send_reminder(self, to_email: str, medication: Dict, user_name: str = "User") -> bool:
+        """Send medication reminder (Async)"""
         drug_name = medication.get('drug_name', 'your medication')
         dosage = medication.get('dosage', '')
         

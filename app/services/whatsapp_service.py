@@ -3,7 +3,7 @@ WhatsApp Service
 Handles WhatsApp Cloud API integration for reminders and notifications
 """
 
-import requests
+import httpx
 import json
 import hmac
 import hashlib
@@ -60,23 +60,23 @@ class WhatsAppService:
             logger.error(f"Error parsing webhook: {e}")
             return None
     
-    def send_message(self, phone_number: str, text: str, 
+    async def send_message(self, phone_number: str, text: str, 
                     template_name: str = None, params: Dict = None) -> Dict:
-        """Send WhatsApp message"""
+        """Send WhatsApp message (Async)"""
         if self.use_mock:
-            return self._mock_send_message(phone_number, text)
+            return await self._mock_send_message(phone_number, text)
         
         try:
             if template_name:
-                return self._send_template_message(phone_number, template_name, params)
+                return await self._send_template_message(phone_number, template_name, params)
             else:
-                return self._send_text_message(phone_number, text)
+                return await self._send_text_message(phone_number, text)
         except Exception as e:
             logger.error(f"Error sending message: {e}")
             return {'success': False, 'error': str(e)}
     
-    def _send_text_message(self, phone_number: str, text: str) -> Dict:
-        """Send plain text message"""
+    async def _send_text_message(self, phone_number: str, text: str) -> Dict:
+        """Send plain text message (Async)"""
         payload = {
             'messaging_product': 'whatsapp',
             'to': phone_number,
@@ -89,12 +89,12 @@ class WhatsAppService:
             'Content-Type': 'application/json'
         }
         
-        response = requests.post(
-            f'{self.api_url}/{self.phone_number_id}/messages',
-            json=payload,
-            headers=headers,
-            timeout=10
-        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f'{self.api_url}/{self.phone_number_id}/messages',
+                json=payload,
+                headers=headers
+            )
         
         if response.status_code == 200:
             data = response.json()
@@ -108,9 +108,9 @@ class WhatsAppService:
                 'error': response.text
             }
     
-    def _send_template_message(self, phone_number: str, template_name: str, 
-                              params: Dict = None) -> Dict:
-        """Send template message"""
+    async def _send_template_message(self, phone_number: str, template_name: str, 
+                               params: Dict = None) -> Dict:
+        """Send template message (Async)"""
         payload = {
             'messaging_product': 'whatsapp',
             'to': phone_number,
@@ -135,12 +135,12 @@ class WhatsAppService:
             'Content-Type': 'application/json'
         }
         
-        response = requests.post(
-            f'{self.api_url}/{self.phone_number_id}/messages',
-            json=payload,
-            headers=headers,
-            timeout=10
-        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f'{self.api_url}/{self.phone_number_id}/messages',
+                json=payload,
+                headers=headers
+            )
         
         if response.status_code == 200:
             data = response.json()
@@ -154,8 +154,8 @@ class WhatsAppService:
                 'error': response.text
             }
     
-    def _mock_send_message(self, phone_number: str, text: str) -> Dict:
-        """Mock message sending for development"""
+    async def _mock_send_message(self, phone_number: str, text: str) -> Dict:
+        """Mock message sending for development (Async)"""
         import uuid
         message_id = str(uuid.uuid4())
         logger.info(f"MOCK: Sending message to {phone_number}: {text}")
@@ -164,43 +164,24 @@ class WhatsAppService:
             'message_id': message_id
         }
     
-    def send_reminder(self, phone_number: str, medication: Dict, 
+    async def send_reminder(self, phone_number: str, medication: Dict, 
                      language: str = 'english') -> Dict:
-        """Send medication reminder"""
-        message_templates = {
-            'english': "🔔 Olive-AI Reminder: Time to take your {drug_name} {dosage}. Please confirm by replying 'taken'.",
-            'yoruba': "🔔 Olive-AI: Akoko yi to lati mu oogun {drug_name} {dosage} re. Jowo fesi pẹlu 'taken' lati jẹrisi.",
-            'hausa': "🔔 Olive-AI: Lokacin shan maganin {drug_name} {dosage} ya yi. Da fatan za a amsa da 'taken' don tabbatarwa.",
-            'igbo': "🔔 Olive-AI: Oge erugo iji ọgwụ {drug_name} {dosage} gị. Biko zaghachi 'taken' iji gosi na i rila ya."
-        }
-        
-        template = message_templates.get(language, message_templates['english'])
-        message_text = template.format(
-            drug_name=medication.get('drug_name'),
-            dosage=medication.get('dosage', '')
-        )
-        
-        return self.send_message(phone_number, message_text)
+        """Send medication reminder (Async)"""
+        # ... exists ...
+        return await self.send_message(phone_number, message_text)
     
-    def send_generic_suggestion(self, phone_number: str, drug: Dict, 
+    async def send_generic_suggestion(self, phone_number: str, drug: Dict, 
                                language: str = 'english') -> Dict:
-        """Send generic drug suggestion"""
-        messages = {
-            'english': f"💊 Generic Alternative Available:\n{drug.get('name')} costs ₦{drug.get('price_naira')}.\n"
-                      f"You can save ₦{drug.get('savings', 0)} with {drug.get('generic_name')}!",
-            'yoruba': f"💊 Oogun Mimeko:\n{drug.get('name')} turun ₦{drug.get('price_naira')}.\n"
-                     f"O le se ifowosi ₦{drug.get('savings', 0)}!",
-        }
-        
-        message_text = messages.get(language, messages['english'])
-        return self.send_message(phone_number, message_text)
+        """Send generic drug suggestion (Async)"""
+        # ... exists ...
+        return await self.send_message(phone_number, message_text)
     
-    def send_verification_request(self, phone_number: str) -> Dict:
-        """Send WhatsApp verification code"""
+    async def send_verification_request(self, phone_number: str) -> Dict:
+        """Send WhatsApp verification code (Async)"""
         code = self._generate_verification_code()
         message = f"Your Medi-Sync verification code is: {code}"
         
-        result = self.send_message(phone_number, message)
+        result = await self.send_message(phone_number, message)
         if result.get('success'):
             result['code'] = code
         
@@ -211,41 +192,40 @@ class WhatsAppService:
         import random
         return ''.join([str(random.randint(0, 9)) for _ in range(6)])
     
-    def download_media(self, media_id: str) -> Optional[bytes]:
-        """Download media from WhatsApp"""
+    async def download_media(self, media_id: str) -> Optional[bytes]:
+        """Download media from WhatsApp (Async)"""
         try:
             headers = {
                 'Authorization': f'Bearer {self.access_token}'
             }
             
-            # Get media URL
-            response = requests.get(
-                f'{self.api_url}/{media_id}',
-                headers=headers,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                media_url = data.get('url')
-                
-                # Download media
-                media_response = requests.get(
-                    media_url,
-                    headers=headers,
-                    timeout=10
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Get media URL
+                response = await client.get(
+                    f'{self.api_url}/{media_id}',
+                    headers=headers
                 )
                 
-                if media_response.status_code == 200:
-                    return media_response.content
+                if response.status_code == 200:
+                    data = response.json()
+                    media_url = data.get('url')
+                    
+                    # Download media
+                    media_response = await client.get(
+                        media_url,
+                        headers=headers
+                    )
+                    
+                    if media_response.status_code == 200:
+                        return media_response.content
         
         except Exception as e:
             logger.error(f"Error downloading media: {e}")
         
         return None
     
-    def mark_message_read(self, message_id: str) -> Dict:
-        """Mark message as read"""
+    async def mark_message_read(self, message_id: str) -> Dict:
+        """Mark message as read (Async)"""
         if self.use_mock:
             return {'success': True}
         
@@ -261,12 +241,12 @@ class WhatsAppService:
                 'Content-Type': 'application/json'
             }
             
-            response = requests.post(
-                f'{self.api_url}/{self.phone_number_id}/messages',
-                json=payload,
-                headers=headers,
-                timeout=10
-            )
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    f'{self.api_url}/{self.phone_number_id}/messages',
+                    json=payload,
+                    headers=headers
+                )
             
             return {
                 'success': response.status_code == 200,

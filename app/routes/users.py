@@ -46,8 +46,8 @@ def create_user(user_data: UserCreate, background_tasks: BackgroundTasks):
     
     return TokenResponse(user=user_res, access_token=access_token)
 
-def initiate_email_verification(user_id: str):
-    """Helper to send verification OTP"""
+async def initiate_email_verification(user_id: str):
+    """Helper to send verification OTP (Async)"""
     from ..services.email_service import get_email_service
     import random
     
@@ -68,7 +68,7 @@ def initiate_email_verification(user_id: str):
         details={"otp": otp_code}
     )
     
-    return email_service.send_otp(user['email'], otp_code, user.get('name', 'User'))
+    return await email_service.send_otp(user['email'], otp_code, user.get('name', 'User'))
 
 @router.post("/login", response_model=TokenResponse)
 def login(login_data: LoginRequest):
