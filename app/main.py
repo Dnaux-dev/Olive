@@ -1,5 +1,5 @@
 """
-Medi-Sync AI Backend
+Olive-AI Backend
 Main FastAPI application entry point
 """
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Medi-Sync AI API",
+    title="Olive-AI API",
     description="Prescription management and medication reminder API",
     version="1.0.0",
     docs_url="/api/docs",
@@ -70,7 +70,7 @@ def health_check():
 def root():
     """Root endpoint"""
     return {
-        "name": "Medi-Sync AI API",
+        "name": "Olive-AI API",
         "version": "1.0.0",
         "docs": "/api/docs",
         "health": "/health"
@@ -93,7 +93,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 async def startup_event():
     """Run on application startup"""
-    logger.info("Starting Medi-Sync AI Backend")
+    logger.info("Starting Olive-AI Backend")
     logger.info(f"Environment: {settings.environment}")
     
     # Start background tasks
@@ -104,7 +104,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Run on application shutdown"""
-    logger.info("Shutting down Medi-Sync AI Backend")
+    logger.info("Shutting down Olive-AI Backend")
     
     # Stop background tasks
     from .tasks.reminders import stop_reminder_scheduler

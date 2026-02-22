@@ -19,7 +19,7 @@ class AIService:
         if self.api_key and self.api_key != "your_google_ai_key":
             try:
                 genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                self.model = genai.GenerativeModel('gemini-pro-latest')
                 self.enabled = True
                 logger.info("Gemini AI Service initialized successfully.")
             except Exception as e:
@@ -35,7 +35,7 @@ class AIService:
             return self._mock_response(user_text, user_language)
 
         system_prompt = f"""
-        You are Medi-Sync AI, a medical assistant for visually impaired users. 
+        You are Olive-AI, a medical assistant for visually impaired users. 
         You are empathetic, professional, and clear.
         
         User input: "{user_text}"

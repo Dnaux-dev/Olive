@@ -35,6 +35,8 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false # Requires a long random string
+      - key: ALLOWED_ORIGINS
+        value: https://olive-ai-five.vercel.app
       - key: BREVO_API_KEY
         sync: false
       - key: BREVO_FROM_EMAIL

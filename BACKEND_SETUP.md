@@ -1,6 +1,6 @@
-# Medi-Sync Backend Setup Guide
+# Olive-AI Backend Setup Guide
 
-Complete step-by-step guide to set up and run the Medi-Sync AI backend.
+Complete step-by-step guide to set up and run the Olive-AI backend.
 
 ## Project Structure Overview
 

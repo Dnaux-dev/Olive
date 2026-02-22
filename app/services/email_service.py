@@ -45,7 +45,7 @@ class EmailService:
                     "Accept": "application/json"
                 },
                 json={
-                    "sender": {"email": self.settings.brevo_from_email, "name": "Medi-Sync AI"},
+                    "sender": {"email": self.settings.brevo_from_email, "name": "Olive-AI"},
                     "to": [{"email": to_email}],
                     "subject": subject,
                     "htmlContent": html_body
@@ -121,19 +121,19 @@ class EmailService:
 
     def send_otp(self, to_email: str, otp_code: str, user_name: str = "User") -> bool:
         """Send OTP verification code"""
-        subject = "Verify your Medi-Sync AI account"
+        subject = "Verify your Olive-AI account"
         body = f"""
         <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                     <h2 style="color: #4A90E2;">Hello {user_name},</h2>
-                    <p>Welcome to Medi-Sync AI. Please use the verification code below to complete your registration:</p>
+                    <p>Welcome to Olive-AI. Please use the verification code below to complete your registration:</p>
                     <div style="background-color: #f4f7f6; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
                         <h1 style="color: #4A90E2; letter-spacing: 5px; margin: 0; font-size: 40px;">{otp_code}</h1>
                     </div>
                     <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                    <p style="font-size: 12px; color: #999; text-align: center;">© 2024 Medi-Sync AI. All rights reserved.</p>
+                    <p style="font-size: 12px; color: #999; text-align: center;">© 2024 Olive-AI. All rights reserved.</p>
                 </div>
             </body>
         </html>
@@ -158,7 +158,7 @@ class EmailService:
                     </div>
                     <p>Please log in to the app to mark it as taken so we can track your progress.</p>
                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                    <small style="color: #999;">Stay healthy! – The Medi-Sync AI Team</small>
+                    <small style="color: #999;">Stay healthy! – The Olive-AI Team</small>
                 </div>
             </body>
         </html>

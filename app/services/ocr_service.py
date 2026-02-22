@@ -103,17 +103,21 @@ class OCRService:
         Uses simple pattern matching and AI-like rules
         """
         drugs = []
-        lines = ocr_text.split('\n')
+        lines = [line.strip() for line in ocr_text.split('\n') if line.strip()]
         
+        seen_drugs = set()
         i = 0
         while i < len(lines):
-            line = lines[i].strip()
+            line = lines[i]
             
-            # Look for drug names (heuristic: capitalized words)
+            # Look for drug names
             if self._is_drug_line(line):
                 drug_info = self._extract_drug_from_section(lines, i)
-                if drug_info:
-                    drugs.append(drug_info)
+                if drug_info and drug_info.name.lower() not in seen_drugs:
+                    # Basic check: drug name shouldn't just be a date or "Date"
+                    if not any(keyword in drug_info.name.lower() for keyword in ['date', 'patient', 'doctor', 'hospital']):
+                        drugs.append(drug_info)
+                        seen_drugs.add(drug_info.name.lower())
                 i += 1
             else:
                 i += 1
@@ -122,24 +126,29 @@ class OCRService:
     
     def _is_drug_line(self, line: str) -> bool:
         """Check if line likely contains a drug name"""
-        if not line or len(line) < 2:
+        if not line or len(line) < 3:
+            return False
+            
+        # Ignore metadata lines
+        line_lower = line.lower()
+        if any(meta in line_lower for meta in ['patient:', 'date:', 'doctor:', 'hospital:', 'rx:']):
             return False
         
         # Common drug patterns
         common_drugs = [
             'amoxicillin', 'paracetamol', 'ibuprofen', 'metformin',
             'lisinopril', 'amlodipine', 'atorvastatin', 'omeprazole',
-            'aspirin', 'vitamin', 'antibiotic', 'tablet', 'capsule'
+            'aspirin', 'vitamin', 'antibiotic'
         ]
         
-        line_lower = line.lower()
         for drug in common_drugs:
             if drug in line_lower:
                 return True
         
-        # Check if line starts with uppercase and has numbers (dosage)
-        return line[0].isupper() and any(c.isdigit() for c in line)
-    
+        # Check if line contains a dosage (number + unit)
+        has_dosage = any(unit in line_lower for unit in ['mg', 'ml', 'tab', 'cap'])
+        return has_dosage and line[0].isupper()
+        
     def _extract_drug_from_section(self, lines: List[str], start_idx: int) -> Optional[DrugInfo]:
         """Extract drug info from a multi-line section"""
         drug_line = lines[start_idx].strip()

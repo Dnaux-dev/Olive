@@ -45,9 +45,11 @@ async def voice_consult(
             
         # 3. Speech to Text (STT)
         user_text = voice_service.speech_to_text(input_path)
+        logger.info(f"STT Result for user {user_id}: '{user_text}'")
         
         # 4. Get AI Advice (Gemini)
         ai_response_text = await ai_service.get_medical_advice(user_text, language)
+        logger.info(f"AI Response for user {user_id}: '{ai_response_text}'")
         
         # 5. Text to Speech (YarnGPT)
         output_filename = f"response_{file_id}.mp3"

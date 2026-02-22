@@ -1,4 +1,4 @@
-# Medi-Sync AI Backend
+# Olive-AI Backend
 
 Prescription management and medication reminder system built with FastAPI, SQLite, and Firebase. Provides OCR prescription scanning, drug matching, generic alternatives, and medication tracking.
 

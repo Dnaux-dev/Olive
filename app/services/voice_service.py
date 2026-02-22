@@ -24,7 +24,7 @@ class VoiceService:
         """
         logger.info(f"STT: Processing {audio_file_path}")
         # Placeholder/Mock: In a real scenario, we'd send this to a STT API
-        return "I have a sharp pain in my stomach and I need help. Inú mń rùn mí."
+        return "I have a sharp pain in my stomach and I need help."
 
     def text_to_speech_yarngpt(self, text: str, language: str = "yoruba", output_path: str = "response.mp3") -> Optional[str]:
         """
