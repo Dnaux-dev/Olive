@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     whatsapp_webhook_token: str = ""
     whatsapp_business_account_id: str = ""
     
-    # Email (SMTP)
+    # Email
+    resend_api_key: str = os.getenv("RESEND_API_KEY", "")
+    resend_from_email: str = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
     smtp_server: str = "smtp.gmail.com"
     smtp_port: int = 587
     smtp_username: str = ""

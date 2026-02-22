@@ -1,39 +1,75 @@
 """
 Email Service Layer
-Handles sending OTPs and medication reminders via SMTP
+Handles sending OTPs and medication reminders via Resend API or SMTP
 """
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import logging
+import requests
 from config import get_settings
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 class EmailService:
-    """Service for sending emails via SMTP"""
+    """Service for sending emails via Resend API or SMTP fallback"""
     
     def __init__(self):
         self.settings = get_settings()
-        self.enabled = bool(self.settings.smtp_username and self.settings.smtp_password)
-        if not self.enabled:
-            logger.warning("Email service disabled: SMTP credentials not provided")
+        self.resend_enabled = bool(self.settings.resend_api_key)
+        self.smtp_enabled = bool(self.settings.smtp_username and self.settings.smtp_password)
+        
+        if not self.resend_enabled and not self.smtp_enabled:
+            logger.warning("Email service disabled: No Resend API key or SMTP credentials provided")
     
     def _send_email(self, to_email: str, subject: str, html_body: str) -> bool:
-        """Core method to send email"""
-        if not self.enabled:
-            logger.info(f"MOCK EMAIL to {to_email}: {subject}")
-            logger.debug(f"Body: {html_body}")
-            return True # Return true for mock/dev
+        """Core method to send email using prioritized providers"""
+        if self.resend_enabled:
+            return self._send_via_resend(to_email, subject, html_body)
+        elif self.smtp_enabled:
+            return self._send_via_smtp(to_email, subject, html_body)
             
+        logger.info(f"MOCK EMAIL to {to_email}: {subject}")
+        return True
+
+    def _send_via_resend(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Send email via Resend API"""
+        try:
+            response = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {self.settings.resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": self.settings.resend_from_email,
+                    "to": to_email,
+                    "subject": subject,
+                    "html": html_body,
+                },
+                timeout=10
+            )
+            
+            if response.status_code in [200, 201]:
+                logger.info(f"Email sent via Resend to {to_email}")
+                return True
+            else:
+                logger.error(f"Resend API error: {response.status_code} - {response.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to send email via Resend: {e}")
+            return False
+
+    def _send_via_smtp(self, to_email: str, subject: str, html_body: str) -> bool:
+        """Send email via legacy SMTP"""
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        
         try:
             msg = MIMEMultipart()
             msg['From'] = self.settings.smtp_from_email
             msg['To'] = to_email
             msg['Subject'] = subject
-            
             msg.attach(MIMEText(html_body, 'html'))
             
             with smtplib.SMTP(self.settings.smtp_server, self.settings.smtp_port) as server:
@@ -43,7 +79,7 @@ class EmailService:
                 
             return True
         except Exception as e:
-            logger.error(f"Failed to send email to {to_email}: {e}")
+            logger.error(f"Failed to send email via SMTP to {to_email}: {e}")
             return False
 
     def send_otp(self, to_email: str, otp_code: str, user_name: str = "User") -> bool:
@@ -51,12 +87,17 @@ class EmailService:
         subject = "Verify your Medi-Sync AI account"
         body = f"""
         <html>
-            <body>
-                <h2>Hello {user_name},</h2>
-                <p>Your verification code for Medi-Sync AI is:</p>
-                <h1 style="color: #4A90E2; letter-spacing: 5px;">{otp_code}</h1>
-                <p>This code will expire in 10 minutes.</p>
-                <p>If you didn't request this, please ignore this email.</p>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #4A90E2;">Hello {user_name},</h2>
+                    <p>Welcome to Medi-Sync AI. Please use the verification code below to complete your registration:</p>
+                    <div style="background-color: #f4f7f6; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0;">
+                        <h1 style="color: #4A90E2; letter-spacing: 5px; margin: 0; font-size: 40px;">{otp_code}</h1>
+                    </div>
+                    <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #999; text-align: center;">© 2024 Medi-Sync AI. All rights reserved.</p>
+                </div>
             </body>
         </html>
         """
@@ -70,16 +111,18 @@ class EmailService:
         subject = f"Reminder: Time to take your {drug_name}"
         body = f"""
         <html>
-            <body>
-                <h2>Hi {user_name},</h2>
-                <p>This is a reminder from Medi-Sync AI to take your medication.</p>
-                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 5px solid #28a745;">
-                    <strong>{drug_name}</strong><br>
-                    Dosage: {dosage}
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #28a745;">Time for your Medication</h2>
+                    <p>Hi {user_name}, this is a reminder to take your medication as scheduled:</p>
+                    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 5px solid #28a745; margin: 20px 0;">
+                        <strong style="font-size: 18px;">{drug_name}</strong><br>
+                        <span style="color: #666;">Dosage: {dosage}</span>
+                    </div>
+                    <p>Please log in to the app to mark it as taken so we can track your progress.</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <small style="color: #999;">Stay healthy! – The Medi-Sync AI Team</small>
                 </div>
-                <p>Please log in to the app to mark it as taken.</p>
-                <br>
-                <small>Stay healthy!</small>
             </body>
         </html>
         """
